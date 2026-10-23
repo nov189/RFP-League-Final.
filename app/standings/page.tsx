@@ -23,6 +23,8 @@ export default function StandingsPage() {
   useEffect(() => {
     async function loadStandings() {
       try {
+        setError("");
+
         const { data: season, error: seasonError } =
           await supabase
             .from("seasons")
@@ -34,6 +36,7 @@ export default function StandingsPage() {
 
         if (!season) {
           setSeasonName("No active season");
+          setTeams([]);
           return;
         }
 
@@ -131,12 +134,15 @@ export default function StandingsPage() {
         );
 
         setTeams(standings);
-      } catch (err) {
-        setError(
+      } catch (err: unknown) {
+        console.error("Standings error:", err);
+
+        const message =
           err instanceof Error
             ? err.message
-            : "Could not load standings."
-        );
+            : JSON.stringify(err);
+
+        setError(message || "Unknown error loading standings.");
       } finally {
         setLoading(false);
       }
@@ -146,100 +152,148 @@ export default function StandingsPage() {
   }, []);
 
   return (
-    <main style={{
-      minHeight: "100vh",
-      background: "#080808",
-      color: "#fff",
-      fontFamily: "Arial, sans-serif",
-      padding: "35px 6%",
-    }}>
-      <a href="/" style={{
-        color: "#d4af37",
-        textDecoration: "none",
-        fontSize: "13px",
-      }}>
+    <main
+      style={{
+        minHeight: "100vh",
+        background: "#080808",
+        color: "#fff",
+        fontFamily: "Arial, sans-serif",
+        padding: "35px 6%",
+      }}
+    >
+      <a
+        href="/"
+        style={{
+          color: "#d4af37",
+          textDecoration: "none",
+          fontSize: "13px",
+        }}
+      >
         ← BACK TO RFP
       </a>
 
-      <p style={{
-        color: "#d4af37",
-        letterSpacing: "4px",
-        fontSize: "11px",
-        marginTop: "45px",
-      }}>
+      <p
+        style={{
+          color: "#d4af37",
+          letterSpacing: "4px",
+          fontSize: "11px",
+          marginTop: "45px",
+        }}
+      >
         RISE FUTURE PROSPECTS
       </p>
 
-      <h1 style={{
-        fontSize: "clamp(36px, 7vw, 64px)",
-        marginBottom: "8px",
-      }}>
+      <h1
+        style={{
+          fontSize: "clamp(36px, 7vw, 64px)",
+          marginBottom: "8px",
+        }}
+      >
         LEAGUE <span style={{ color: "#d4af37" }}>STANDINGS</span>
       </h1>
 
-      <p style={{ color: "#999" }}>{seasonName || "Loading season..."}</p>
+      <p style={{ color: "#999" }}>
+        {seasonName || "Loading season..."}
+      </p>
 
       {loading ? (
         <p style={{ color: "#aaa", marginTop: "40px" }}>
           Loading standings...
         </p>
       ) : error ? (
-        <p style={{ color: "#ff7777", marginTop: "40px" }}>
-          Could not load standings: {error}
-        </p>
+        <div
+          style={{
+            marginTop: "40px",
+            padding: "18px",
+            border: "1px solid #663333",
+            background: "#190b0b",
+            color: "#ff9999",
+            overflowWrap: "anywhere",
+          }}
+        >
+          <strong>Could not load standings:</strong>
+          <p>{error}</p>
+          <p style={{ fontSize: "12px", color: "#cc8888" }}>
+            Check the Supabase connection and database permissions.
+          </p>
+        </div>
       ) : teams.length === 0 ? (
         <p style={{ color: "#aaa", marginTop: "40px" }}>
-          No teams have been added to this season yet.
+          {seasonName === "No active season"
+            ? "No active season yet. Add a season in Supabase to get started."
+            : "No teams have been added to this season yet."}
         </p>
       ) : (
-        <div style={{
-          overflowX: "auto",
-          marginTop: "35px",
-          border: "1px solid #302919",
-        }}>
-          <table style={{
-            width: "100%",
-            minWidth: "520px",
-            borderCollapse: "collapse",
-            textAlign: "left",
-          }}>
+        <div
+          style={{
+            overflowX: "auto",
+            marginTop: "35px",
+            border: "1px solid #302919",
+          }}
+        >
+          <table
+            style={{
+              width: "100%",
+              minWidth: "520px",
+              borderCollapse: "collapse",
+              textAlign: "left",
+            }}
+          >
             <thead style={{ background: "#17140d" }}>
               <tr>
                 {["RANK", "TEAM", "P", "W", "L", "D", "PTS"].map(
                   (heading) => (
-                    <th key={heading} style={{
-                      padding: "16px 12px",
-                      color: "#d4af37",
-                      fontSize: "11px",
-                      letterSpacing: "1px",
-                    }}>
+                    <th
+                      key={heading}
+                      style={{
+                        padding: "16px 12px",
+                        color: "#d4af37",
+                        fontSize: "11px",
+                        letterSpacing: "1px",
+                      }}
+                    >
                       {heading}
                     </th>
                   )
                 )}
               </tr>
             </thead>
+
             <tbody>
               {teams.map((team, index) => (
-                <tr key={team.id} style={{
-                  borderTop: "1px solid #282418",
-                  background: index === 0 ? "#151209" : "transparent",
-                }}>
-                  <td style={{ padding: "17px 12px", color: "#d4af37" }}>
+                <tr
+                  key={team.id}
+                  style={{
+                    borderTop: "1px solid #282418",
+                    background:
+                      index === 0 ? "#151209" : "transparent",
+                  }}
+                >
+                  <td
+                    style={{
+                      padding: "17px 12px",
+                      color: "#d4af37",
+                    }}
+                  >
                     {String(index + 1).padStart(2, "0")}
                   </td>
+
                   <td style={{ padding: "17px 12px", fontWeight: 700 }}>
                     {team.name}
                   </td>
+
                   <td style={{ padding: "17px 12px" }}>{team.played}</td>
                   <td style={{ padding: "17px 12px" }}>{team.wins}</td>
                   <td style={{ padding: "17px 12px" }}>{team.losses}</td>
                   <td style={{ padding: "17px 12px" }}>{team.draws}</td>
-                  <td style={{
-                    padding: "17px 12px",
-                    color: "#d4af37",
-                    fontWeight: 800,
-                  }}>
+
+                  <td
+                    style={{
+                      padding: "17px 12px",
+                      color: "#d4af37",
+                      fontWeight: 800,
+                    }}
+                  >
                     {team.points}
                   </td>
                 </tr>
@@ -249,11 +303,13 @@ export default function StandingsPage() {
         </div>
       )}
 
-      <p style={{
-        color: "#666",
-        fontSize: "12px",
-        marginTop: "25px",
-      }}>
+      <p
+        style={{
+          color: "#666",
+          fontSize: "12px",
+          marginTop: "25px",
+        }}
+      >
         Points: 3 for a win, 1 for a draw.
       </p>
     </main>
